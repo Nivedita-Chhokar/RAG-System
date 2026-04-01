@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG System — Stock Market & Investment Analysis</title>
+    <meta name="description" content="Retrieval-Augmented Generation system for investment textbook analysis using semantic search and AI-powered responses.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- ═══════ HEADER ═══════ -->
+    <header id="app-header">
+        <div class="header-left">
+            <div class="logo-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                    <line x1="8" y1="7" x2="16" y2="7"/>
+                    <line x1="8" y1="11" x2="14" y2="11"/>
+                </svg>
+            </div>
+            <div>
+                <h1>RAG System</h1>
+                <p class="subtitle">Stock Market & Investment Analysis</p>
+            </div>
+        </div>
+        <div class="header-right">
+            <div id="status-indicator" class="status-badge status-idle">
+                <span class="status-dot"></span>
+                <span id="status-text">Idle</span>
+            </div>
+        </div>
+    </header>
+
+    <main id="app-main">
+        <!-- ═══════ UPLOAD SECTION ═══════ -->
+        <section id="upload-section" class="card">
+            <div class="card-header">
+                <h2>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    Upload Investment Textbook
+                </h2>
+            </div>
+            <div id="drop-zone" class="drop-zone">
+                <div class="drop-zone-content">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="upload-icon">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="12" y1="18" x2="12" y2="12"/>
+                        <polyline points="9 15 12 12 15 15"/>
+                    </svg>
+                    <p class="drop-text">Drag & drop your PDF here</p>
+                    <p class="drop-subtext">or click to browse • PDF files only</p>
+                    <input type="file" id="file-input" accept=".pdf" hidden>
+                </div>
+            </div>
+            <!-- Progress -->
+            <div id="upload-progress" class="progress-container hidden">
+                <div class="progress-header">
+                    <span id="progress-label">Processing...</span>
+                    <span id="progress-percent">0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div id="progress-fill" class="progress-fill"></div>
+                </div>
+                <p id="progress-detail" class="progress-detail"></p>
+            </div>
+            <!-- Upload Result -->
+            <div id="upload-result" class="result-box hidden"></div>
+        </section>
+
+        <!-- ═══════ DATABASE VIEWER ═══════ -->
+        <section id="db-section" class="card">
+            <div class="card-header">
+                <h2>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                        <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+                        <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+                    </svg>
+                    ChromaDB — Vector Database Viewer
+                </h2>
+                <div class="tab-bar">
+                    <button class="tab active" data-tab="chunks" id="tab-chunks">
+                        📄 Text Chunks
+                    </button>
+                    <button class="tab" data-tab="embeddings" id="tab-embeddings">
+                        🔢 Embeddings
+                    </button>
+                </div>
+            </div>
+
+            <!-- Chunks Tab -->
+            <div id="panel-chunks" class="tab-panel active">
+                <div id="chunks-info" class="info-bar">
+                    <span>No chunks loaded. Upload a PDF first.</span>
+                </div>
+                <div id="chunks-list" class="chunks-grid"></div>
+            </div>
+
+            <!-- Embeddings Tab -->
+            <div id="panel-embeddings" class="tab-panel">
+                <div class="info-bar">
+                    <span>Select a chunk to view its vector embedding</span>
+                </div>
+                <div id="embedding-selector" class="embedding-selector">
+                    <select id="chunk-select">
+                        <option value="">— Select a chunk —</option>
+                    </select>
+                    <button id="btn-load-embedding" class="btn btn-secondary" disabled>Load Embedding</button>
+                </div>
+                <div id="embedding-display" class="embedding-display hidden"></div>
+            </div>
+        </section>
+
+        <!-- ═══════ QUERY SECTION ═══════ -->
+        <section id="query-section" class="card">
+            <div class="card-header">
+                <h2>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    Query the RAG System
+                </h2>
+            </div>
+
+            <!-- Quick Questions -->
+            <div class="quick-questions">
+                <p class="quick-label">Mandatory Questions:</p>
+                <div class="question-chips">
+                    <button class="chip" data-q="how to deal with brokerage houses?">🏦 Brokerage Houses</button>
+                    <button class="chip" data-q="what is theory of diversification?">📊 Theory of Diversification</button>
+                    <button class="chip" data-q="how to become intelligent investor?">🧠 Intelligent Investor</button>
+                    <button class="chip" data-q="how to do business valuation?">💰 Business Valuation</button>
+                    <button class="chip" data-q="what is putting all eggs in one basket analogy?">🥚 Eggs in One Basket</button>
+                </div>
+            </div>
+
+            <!-- Query Input -->
+            <div class="query-input-group">
+                <input type="text" id="query-input" placeholder="Type your question about the investment textbook..." autocomplete="off">
+                <button id="btn-query" class="btn btn-primary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="22" y1="2" x2="11" y2="13"/>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                    </svg>
+                    Ask
+                </button>
+            </div>
+
+            <!-- Response Area -->
+            <div id="response-area" class="response-area hidden">
+                <div id="response-loading" class="response-loading hidden">
+                    <div class="spinner"></div>
+                    <span>Searching knowledge base & generating answer...</span>
+                </div>
+                <div id="response-content" class="response-content hidden">
+                    <div class="response-header">
+                        <h3>📝 Answer</h3>
+                    </div>
+                    <div id="response-text" class="response-text"></div>
+                    <div id="response-sources" class="response-sources"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ═══════ FOOTER ═══════ -->
+    <footer>
+        <p>RAG System • Built with Flask, ChromaDB & Google Gemini • Stock Market & Investment Analysis</p>
+    </footer>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
